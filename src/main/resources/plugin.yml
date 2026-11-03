@@ -1,0 +1,12 @@
+name: NexusWatchtower
+version: ${project.version}
+main: com.nexuscraft.nexuswatchtower.WatchtowerPlugin
+api-version: '1.21'
+author: RealSociety
+description: "The owner's private early-warning system: tripwires for destruction, fire, command blocks, operator changes and swapped plugin files, a guard mode for one watched operator, and alerts to a private Discord channel."
+
+commands:
+  watchtower:
+    description: Owner-only Watchtower controls.
+    usage: /watchtower <status|list|add|remove|mode|lock|unlock|lockdown|snapshot|log|digest|ops|baseline|test|reload>
+    aliases: [wt]
