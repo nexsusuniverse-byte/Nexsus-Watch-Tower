@@ -1,0 +1,156 @@
+# NexusWatchtower configuration. /watchtower reload re-reads this file (timers keep their old schedule until a restart).
+#
+# This plugin watches what people DO on your server and tells only you. It never reads private
+# messages (the target of a /msg is logged, the text is not) and never records voice. Tell your staff
+# in your rules that server actions and public chat are logged; that is fair to them and it deters trouble.
+
+server-name: "Nexus Universe"
+timezone: "UTC"
+
+# Who may use /watchtower, and who Watchtower never watches. Minecraft names (lower or upper case)
+# or UUIDs. For a Bedrock account include the dot Floodgate adds, for example ".YourGamertag".
+owners:
+  - "RealSociety5107"
+
+# The Kai Ross Nexus app. This is the main way Watchtower reaches you: alerts become phone
+# notifications through the app, and the guarded players' activity shows up in the Command Center.
+# The secret is the same value as the app's KAI_ROSS_WEBHOOK_SECRET. Keep this file private.
+app:
+  base-url: "https://kai-core-genesis.base44.app"
+  secret: ""
+  server-id: "main"
+  # Yellow alerts buzz the phone too. RED alerts always do. Set false to see yellow ones only in the app.
+  push-yellow: true
+  # Send "server started" and "server stopping" notices.
+  notify-server-start-stop: true
+  # At most this many messages per minute (the app refuses more than 20). RED goes first; extras
+  # are folded into one "held back" notice and stay in the journal.
+  max-per-minute: 18
+  # Only needed if the app's command bridge is not the console: the full Java class name of the
+  # command sender it uses. Run a /watchtower command from the app; if it answers "Unknown command",
+  # Watchtower tells you the class name in a yellow alert (and in the console).
+  trusted-sender-classes: []
+
+# Everything every player does -- chat, joins and leaves, deaths, kills, blocks, commands, advancements -- is sent
+# to the app in small batches (never one request per event, never on the game thread) so it shows in the
+# Command Center and can reach your phone. NOBODY is skipped: owners, operators and players with bypass
+# permissions are reported like everyone else. It uses the address and secret from the app: section above.
+# Private message text and password commands are hidden using commands.hide-message-text and
+# commands.hide-everything below (plus a few built-in ones such as /nexusgate). IP addresses are blanked out.
+feed:
+  enabled: true
+  # Events per request. The app accepts at most 50, so anything higher is lowered to 50.
+  batch-size: 40
+  # How often (seconds) the queue is sent. Takes effect on /watchtower reload.
+  flush-seconds: 2
+  # true = one console line per request (counts only, never the secret).
+  debug: false
+  # Which kinds to send. Blocks and chat can be chatty on a busy server; the app switches decide what buzzes.
+  events:
+    chat: true
+    player_join: true
+    player_quit: true
+    player_death: true
+    mob_kill: true
+    player_kill: true
+    block_break: true
+    block_place: true
+    command: true
+    advancement: true
+    damage: false
+    item_pickup: false
+
+# Optional extra channel: a PRIVATE Discord channel only you can see.
+alerts:
+  # A webhook for a PRIVATE Discord channel only you can see:
+  # Channel settings > Integrations > Webhooks > New Webhook > Copy Webhook URL. Without it, alerts
+  # only reach the console and you when you are in game.
+  discord-webhook: ""
+  # Optional: a second channel for the busy activity feed. Empty means the same channel.
+  feed-webhook: ""
+  # Optional: your Discord user id (Settings > Advanced > Developer Mode, then right-click yourself >
+  # Copy User ID). RED alerts then ping you. Nobody else is ever pinged.
+  ping-discord-user-id: ""
+  # The same alert about the same person is sent at most once per this many seconds.
+  repeat-quiet-seconds: 60
+  # Yellow alerts per minute before extras are held back (red alerts are never held back).
+  max-yellow-per-minute: 12
+
+# Tripwires. "limit" events inside the window fire a RED alert. The "-watched" numbers apply to
+# people on your watchlist and are deliberately lower.
+tripwires:
+  mass-blocks:
+    window-seconds: 10
+    limit: 300
+    limit-watched: 100
+  tnt:
+    limit: 5            # TNT blocks placed in 30 seconds
+    limit-watched: 2
+  lava:
+    limit: 4            # lava buckets emptied in 60 seconds
+    limit-watched: 2
+  fire:
+    limit: 6            # fires lit by a player in 30 seconds
+    limit-watched: 3
+  command-blocks: true  # any command block placed by anyone but an owner
+  wither: true          # a Wither was built
+
+commands:
+  # Anyone but an owner running these raises an alert. Red also pings you.
+  red: [op, deop, stop, reload, rl, restart, plugman, plugin, luckperms, lp, pex, perms, permissions, save-off]
+  yellow: [gamerule, whitelist, ban-ip, pardon, pardon-ip, difficulty, defaultgamemode, worldborder, forceload, data]
+  # Using @e or @a with these raises a yellow alert.
+  mass-selector: [kill, clear, give, tp, teleport, effect, gamemode, xp, experience, enchant, item, replaceitem]
+  # For watched players the target of these is logged but the text is not. Never read as chat.
+  hide-message-text: [msg, tell, w, whisper, m, t, pm, dm, r, reply]
+  # Nothing after these is ever logged.
+  hide-everything: [login, l, register, reg, changepassword, password]
+
+# Guard mode is for a watched player you cannot afford to demote. They KEEP operator. Their commands
+# are logged and streamed to you, the commands below are refused with a plain "no permission"
+# message, and if a tripwire fires they are frozen until you run /watchtower unlock <name>.
+guard:
+  blocked-commands: [op, deop, stop, reload, rl, restart, plugman, plugin, luckperms, lp, pex, perms, permissions,
+                     whitelist, gamerule, save-off, execute, fill, setblock, clone, data, forceload, worldborder, "//"]
+  denied-message: "You do not have permission to use this command."
+  freeze-on-tripwire: true
+  frozen-message: "You can't do that right now."
+
+watch:
+  alert-on-join: true     # yellow alert when a watched player joins
+  stream-activity: true   # batched feed of their commands, joins, leaves and containers
+  feed-seconds: 30
+  feed-max-lines: 15
+  together-alert-at: 3    # yellow alert when this many watched accounts are online at once
+
+# Public chat phrases (case-insensitive) that raise a yellow alert. Only public chat is checked.
+chat:
+  phrases: []
+  # Example: ["shut down the server", "grief", "wipe the world", "raid the spawn"]
+
+# If this list is not empty, any operator not on it (and not an owner) raises a RED alert at startup,
+# and anyone newly given operator raises RED unless they are listed here.
+operators:
+  expected: []
+  check-seconds: 60
+
+# Switching one of these off while the server is running raises RED instead of yellow.
+plugins:
+  protection: [nexuswatchtower, nexusgate, nexusshield, nexusgatewatch, nexusadmin, nexusrealms, nexusdenyblocks,
+               nexusserverrules, nexuslogs, nexussentinel, nexusguardian, nexusvault, nexusspawnshield, nexusintegrity]
+
+# Fingerprints every plugin jar plus these files. A first start saves them as trusted; after that any
+# jar or file that is added, removed or changed raises RED until you approve it with /watchtower baseline.
+files:
+  check: true
+  check-every-minutes: 30
+  also-watch: [server.properties, bukkit.yml, spigot.yml, commands.yml, permissions.yml,
+               config/paper-global.yml, config/paper-world-defaults.yml]
+
+digest:
+  enabled: true
+  every-hours: 24
+
+journal:
+  keep-days: 30
+  lines-in-memory: 2000
